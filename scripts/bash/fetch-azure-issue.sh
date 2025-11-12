@@ -175,7 +175,7 @@ if [ "$JSON_MODE" = false ]; then
 fi
 
 HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" -H "$AUTH_HEADER" "$API_URL")
-HTTP_BODY=$(echo "$HTTP_RESPONSE" | head -n -1)
+HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
 HTTP_CODE=$(echo "$HTTP_RESPONSE" | tail -n 1)
 
 if [ "$HTTP_CODE" != "200" ]; then
