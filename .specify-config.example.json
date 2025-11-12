@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "description": "Spec Kit configuration file - Copy this to .specify/config.json and fill in your details",
+
+  "azureDevOps": {
+    "enabled": true,
+    "organization": "your-organization",
+    "project": "your-project",
+    "apiVersion": "7.1",
+    "_comment": "Azure DevOps integration settings",
+    "_instructions": {
+      "setup": [
+        "1. Find your organization and project:",
+        "   If your URL is: https://dev.azure.com/contoso/MyProject",
+        "   Then: organization='contoso', project='MyProject'",
+        "",
+        "2. Set up authentication (choose one):",
+        "   Option A - Personal Access Token (Recommended):",
+        "     export AZURE_DEVOPS_PAT='your-token-here'",
+        "   Option B - Azure CLI:",
+        "     az login",
+        "",
+        "3. Test the integration:",
+        "   /speckit.startIssue 12345"
+      ],
+      "createPAT": [
+        "To create a Personal Access Token:",
+        "1. Go to Azure DevOps → User Settings → Personal Access Tokens",
+        "2. Click 'New Token'",
+        "3. Give it a name: 'Spec Kit Integration'",
+        "4. Select scope: 'Work Items (Read)'",
+        "5. Set expiration as needed",
+        "6. Copy the token and set: export AZURE_DEVOPS_PAT='token'"
+      ]
+    }
+  },
+
+  "branchNaming": {
+    "useWorkItemId": true,
+    "_comment": "When true, branches are named {work-item-id}-{title}. When false, uses auto-increment."
+  },
+
+  "features": {
+    "autoArchiveIssues": true,
+    "_comment": "Automatically archive work item data after creating spec"
+  }
+}
