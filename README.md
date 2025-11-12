@@ -326,6 +326,7 @@ If you encounter issues with an agent, please open an issue so we can refine the
 - **[Complete Spec-Driven Development Methodology](./spec-driven.md)** - Deep dive into the full process
 - **[Azure DevOps Integration](./docs/azure-devops-integration.md)** - Connect Spec Kit with Azure DevOps work items
 - **[Configuration Setup Guide](./docs/config-setup.md)** - Complete guide to configuring Spec Kit
+- **[Updating Existing Projects](./docs/updating.md)** - How to update your project with new features
 - **[Detailed Walkthrough](#-detailed-process)** - Step-by-step implementation guide
 
 ---
