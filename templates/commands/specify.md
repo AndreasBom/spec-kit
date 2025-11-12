@@ -13,15 +13,51 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Azure DevOps Integration
+
+Before proceeding with the user input, check if there is Azure DevOps work item data available from a previous `/speckit.startIssue` command:
+
+1. **Check for saved work item data**:
+   - Look for `.specify/temp/current-issue.json` in the repository root
+   - If the file exists, read its contents to get:
+     - Work item ID
+     - Work item type (User Story, Task, Bug, etc.)
+     - Title
+     - Description (may contain HTML formatting)
+     - Acceptance Criteria (may contain HTML formatting)
+   - If HTML content exists, convert it to markdown or plain text for better readability
+
+2. **Determine feature description source**:
+   - **If work item data exists AND user provided no arguments**:
+     - Use the work item title + description as the feature description
+     - Include acceptance criteria in the specification
+     - Set `AZURE_ISSUE_ID` to the work item ID (this will be used for branch naming)
+   - **If work item data exists AND user provided arguments**:
+     - Combine the work item data with user's additional context
+     - User's input should augment/clarify the work item, not replace it
+     - Set `AZURE_ISSUE_ID` to the work item ID
+   - **If no work item data exists**:
+     - Use the user's input as the feature description (standard behavior)
+     - Set `AZURE_ISSUE_ID` to empty
+
+3. **Clean up work item data**:
+   - After reading the work item data, optionally archive it (rename to `last-issue.json`) to avoid accidental reuse
+   - This ensures each `/speckit.startIssue` maps to one specification
+
 ## Outline
 
-The text the user typed after `/speckit.specify` in the triggering message **is** the feature description. Assume you always have it available in this conversation even if `{ARGS}` appears literally below. Do not ask the user to repeat it unless they provided an empty command.
+The text the user typed after `/speckit.specify` in the triggering message **is** the feature description, UNLESS Azure DevOps work item data is available (see above). Assume you always have it available in this conversation even if `{ARGS}` appears literally below. Do not ask the user to repeat it unless they provided an empty command AND no work item data exists.
 
 Given that feature description, do this:
 
 1. **Generate a concise short name** (2-4 words) for the branch:
-   - Analyze the feature description and extract the most meaningful keywords
-   - Create a 2-4 word short name that captures the essence of the feature
+   - **If Azure DevOps work item data exists** (`AZURE_ISSUE_ID` is set):
+     - Generate short name from the work item title (not the full description)
+     - The branch will be named: `{work-item-id}-{short-name}` (e.g., "12345-user-auth")
+     - The work item ID ensures the branch is clearly linked to the Azure DevOps item
+   - **If no Azure DevOps work item data**:
+     - Analyze the feature description and extract the most meaningful keywords
+     - Create a 2-4 word short name that captures the essence of the feature
    - Use action-noun format when possible (e.g., "add-user-auth", "fix-payment-bug")
    - Preserve technical terms and acronyms (OAuth2, API, JWT, etc.)
    - Keep it concise but descriptive enough to understand the feature at a glance
@@ -30,28 +66,37 @@ Given that feature description, do this:
      - "Implement OAuth2 integration for the API" → "oauth2-api-integration"
      - "Create a dashboard for analytics" → "analytics-dashboard"
      - "Fix payment processing timeout bug" → "fix-payment-timeout"
+     - Azure DevOps work item #12345 "Add user authentication" → "12345-user-auth"
 
 2. **Check for existing branches before creating new one**:
-   
+
    a. First, fetch all remote branches to ensure we have the latest information:
       ```bash
       git fetch --all --prune
       ```
-   
-   b. Find the highest feature number across all sources for the short-name:
-      - Remote branches: `git ls-remote --heads origin | grep -E 'refs/heads/[0-9]+-<short-name>$'`
-      - Local branches: `git branch | grep -E '^[* ]*[0-9]+-<short-name>$'`
-      - Specs directories: Check for directories matching `specs/[0-9]+-<short-name>`
-   
-   c. Determine the next available number:
-      - Extract all numbers from all three sources
-      - Find the highest number N
-      - Use N+1 for the new branch number
-   
-   d. Run the script `{SCRIPT}` with the calculated number and short-name:
-      - Pass `--number N+1` and `--short-name "your-short-name"` along with the feature description
-      - Bash example: `{SCRIPT} --json --number 5 --short-name "user-auth" "Add user authentication"`
-      - PowerShell example: `{SCRIPT} -Json -Number 5 -ShortName "user-auth" "Add user authentication"`
+
+   b. **If Azure DevOps work item data exists** (`AZURE_ISSUE_ID` is set):
+      - Use the work item ID as the branch number (no auto-increment needed)
+      - Generate short-name from the work item title
+      - Run the script `{SCRIPT}` with: `--number {AZURE_ISSUE_ID} --short-name "{short-name}"`
+      - Bash example: `{SCRIPT} --json --number 12345 --short-name "user-auth" "Add user authentication system"`
+      - PowerShell example: `{SCRIPT} -Json -Number 12345 -ShortName "user-auth" "Add user authentication system"`
+      - This creates a branch like: `12345-user-auth`
+      - The feature description should be the full work item description (and acceptance criteria if available)
+
+   c. **If no Azure DevOps work item data** (standard behavior):
+      - Find the highest feature number across all sources for the short-name:
+        - Remote branches: `git ls-remote --heads origin | grep -E 'refs/heads/[0-9]+-<short-name>$'`
+        - Local branches: `git branch | grep -E '^[* ]*[0-9]+-<short-name>$'`
+        - Specs directories: Check for directories matching `specs/[0-9]+-<short-name>`
+      - Determine the next available number:
+        - Extract all numbers from all three sources
+        - Find the highest number N
+        - Use N+1 for the new branch number
+      - Run the script `{SCRIPT}` with the calculated number and short-name:
+        - Pass `--number N+1` and `--short-name "your-short-name"` along with the feature description
+        - Bash example: `{SCRIPT} --json --number 5 --short-name "user-auth" "Add user authentication"`
+        - PowerShell example: `{SCRIPT} -Json -Number 5 -ShortName "user-auth" "Add user authentication"`
    
    **IMPORTANT**:
    - Check all three sources (remote branches, local branches, specs directories) to find the highest number

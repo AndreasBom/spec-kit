@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "description": "Spec Kit configuration file",
+
+  "azureDevOps": {
+    "enabled": true,
+    "organization": "",
+    "project": "",
+    "apiVersion": "7.1",
+    "_comment": "Azure DevOps integration settings. Required for /speckit.startIssue command.",
+    "_instructions": {
+      "organization": "Your Azure DevOps organization name (from URL: https://dev.azure.com/{organization}/)",
+      "project": "Your Azure DevOps project name",
+      "authentication": "Set AZURE_DEVOPS_PAT environment variable or use 'az login'",
+      "example": {
+        "organization": "contoso",
+        "project": "MyProject"
+      }
+    }
+  },
+
+  "branchNaming": {
+    "useWorkItemId": true,
+    "_comment": "When true, branches are named {work-item-id}-{title}. When false, uses auto-increment numbers."
+  },
+
+  "features": {
+    "autoArchiveIssues": true,
+    "_comment": "Automatically archive work item data after creating spec to prevent reuse"
+  }
+}

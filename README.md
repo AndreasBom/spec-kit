@@ -100,6 +100,20 @@ Use the **`/speckit.specify`** command to describe what you want to build. Focus
 /speckit.specify Build an application that can help me organize my photos in separate photo albums. Albums are grouped by date and can be re-organized by dragging and dropping on the main page. Albums are never in other nested albums. Within each album, photos are previewed in a tile-like interface.
 ```
 
+**Optional: Azure DevOps Integration**
+
+If you're working from Azure DevOps work items, use `/speckit.startIssue` first:
+
+```bash
+/speckit.startIssue 12345
+# Fetches work item details and saves them
+# Then run:
+/speckit.specify
+# Uses the work item title, description, and acceptance criteria
+```
+
+See [Azure DevOps Integration](./docs/azure-devops-integration.md) for setup instructions.
+
 ### 4. Create a technical implementation plan
 
 Use the **`/speckit.plan`** command to provide your tech stack and architecture choices.
@@ -232,6 +246,7 @@ Essential commands for the Spec-Driven Development workflow:
 | Command                  | Description                                                           |
 |--------------------------|-----------------------------------------------------------------------|
 | `/speckit.constitution`  | Create or update project governing principles and development guidelines |
+| `/speckit.startIssue`    | Fetch Azure DevOps work item to use as basis for specification (optional) |
 | `/speckit.specify`       | Define what you want to build (requirements and user stories)        |
 | `/speckit.plan`          | Create technical implementation plans with your chosen tech stack     |
 | `/speckit.tasks`         | Generate actionable task lists for implementation                     |
@@ -309,6 +324,8 @@ If you encounter issues with an agent, please open an issue so we can refine the
 ## 📖 Learn More
 
 - **[Complete Spec-Driven Development Methodology](./spec-driven.md)** - Deep dive into the full process
+- **[Azure DevOps Integration](./docs/azure-devops-integration.md)** - Connect Spec Kit with Azure DevOps work items
+- **[Configuration Setup Guide](./docs/config-setup.md)** - Complete guide to configuring Spec Kit
 - **[Detailed Walkthrough](#-detailed-process)** - Step-by-step implementation guide
 
 ---
