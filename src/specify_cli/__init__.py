@@ -515,6 +515,32 @@ def handle_vscode_settings(sub_item, dest_file, rel_path, verbose=False, tracker
         log(f"Warning: Could not merge, copying instead: {e}", "yellow")
         shutil.copy2(sub_item, dest_file)
 
+def handle_constitution(sub_item, dest_file, rel_path, verbose=False, tracker=None) -> None:
+    """Handle constitution.md - preserve existing content, don't overwrite."""
+    def log(message, color="green"):
+        if verbose and not tracker:
+            console.print(f"[{color}]{message}[/] {rel_path}")
+
+    if dest_file.exists():
+        # Check if existing file has meaningful content (more than just template/comments)
+        try:
+            with open(dest_file, 'r', encoding='utf-8') as f:
+                existing_content = f.read().strip()
+
+            # Only overwrite if the file is essentially empty or just has default template text
+            if len(existing_content) > 100:  # Has substantial content
+                log("Preserved existing constitution (not overwritten):", "cyan")
+                return
+        except Exception:
+            pass
+
+    # If we get here, either file doesn't exist or is empty - copy the template
+    shutil.copy2(sub_item, dest_file)
+    if dest_file.exists():
+        log("Copied constitution template:", "blue")
+    else:
+        log("Copied:", "blue")
+
 def merge_json_files(existing_path: Path, new_content: dict, verbose: bool = False) -> dict:
     """Merge new JSON content into existing JSON file.
 
@@ -749,9 +775,16 @@ def download_and_extract_template(project_path: Path, ai_assistant: str, script_
                                         rel_path = sub_item.relative_to(item)
                                         dest_file = dest_path / rel_path
                                         dest_file.parent.mkdir(parents=True, exist_ok=True)
+
+                                        # Convert to string for easier path matching
+                                        rel_path_str = str(rel_path).replace('\\', '/')
+
                                         # Special handling for .vscode/settings.json - merge instead of overwrite
                                         if dest_file.name == "settings.json" and dest_file.parent.name == ".vscode":
                                             handle_vscode_settings(sub_item, dest_file, rel_path, verbose, tracker)
+                                        # Special handling for constitution.md - preserve existing content
+                                        elif "memory/constitution.md" in rel_path_str:
+                                            handle_constitution(sub_item, dest_file, rel_path, verbose, tracker)
                                         else:
                                             shutil.copy2(sub_item, dest_file)
                             else:
