@@ -47,16 +47,19 @@ if (-not (Test-Path $TempDir)) {
 
 # Read configuration
 if (-not (Test-Path $ConfigFile)) {
-    Write-Error @"
-Configuration file not found at $ConfigFile
-Please create the file with the following structure:
-{
-  "azureDevOps": {
-    "organization": "your-org",
-    "project": "your-project"
-  }
-}
-"@
+    Write-Host ""
+    Write-Host "❌ Configuration file not found!" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "The file $ConfigFile is missing."
+    Write-Host ""
+    Write-Host "Please run the /speckit.startIssue command in your AI agent first."
+    Write-Host "The agent will provide step-by-step setup instructions."
+    Write-Host ""
+    Write-Host "Quick setup:" -ForegroundColor Cyan
+    Write-Host "  1. Copy-Item .specify-config.example.json .specify/config.json"
+    Write-Host "  2. Edit .specify/config.json with your Azure DevOps org and project"
+    Write-Host "  3. Set `$env:AZURE_DEVOPS_PAT environment variable"
+    Write-Host ""
     exit 1
 }
 
@@ -65,7 +68,21 @@ $azureOrg = $config.azureDevOps.organization
 $azureProject = $config.azureDevOps.project
 
 if (-not $azureOrg -or -not $azureProject) {
-    Write-Error "Azure DevOps organization and project must be configured in $ConfigFile"
+    Write-Host ""
+    Write-Host "❌ Azure DevOps configuration incomplete!" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "The file $ConfigFile exists but is missing required fields."
+    Write-Host ""
+    Write-Host "Please edit $ConfigFile and add:" -ForegroundColor Cyan
+    Write-Host '  "azureDevOps": {'
+    Write-Host '    "organization": "your-org",  ← Fill this in'
+    Write-Host '    "project": "your-project"     ← Fill this in'
+    Write-Host '  }'
+    Write-Host ""
+    Write-Host "Example: If your Azure DevOps URL is https://dev.azure.com/contoso/MyProject"
+    Write-Host "  organization: contoso"
+    Write-Host "  project: MyProject"
+    Write-Host ""
     exit 1
 }
 

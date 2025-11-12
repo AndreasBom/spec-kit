@@ -89,14 +89,19 @@ mkdir -p "$TEMP_DIR"
 
 # Read configuration
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Error: Configuration file not found at $CONFIG_FILE" >&2
-    echo "Please create the file with the following structure:" >&2
-    echo '{' >&2
-    echo '  "azureDevOps": {' >&2
-    echo '    "organization": "your-org",' >&2
-    echo '    "project": "your-project"' >&2
-    echo '  }' >&2
-    echo '}' >&2
+    echo "" >&2
+    echo "❌ Configuration file not found!" >&2
+    echo "" >&2
+    echo "The file $CONFIG_FILE is missing." >&2
+    echo "" >&2
+    echo "Please run the /speckit.startIssue command in your AI agent first." >&2
+    echo "The agent will provide step-by-step setup instructions." >&2
+    echo "" >&2
+    echo "Quick setup:" >&2
+    echo "  1. cp .specify-config.example.json .specify/config.json" >&2
+    echo "  2. Edit .specify/config.json with your Azure DevOps org and project" >&2
+    echo "  3. Set AZURE_DEVOPS_PAT environment variable" >&2
+    echo "" >&2
     exit 1
 fi
 
@@ -112,7 +117,21 @@ AZURE_ORG=$(jq -r '.azureDevOps.organization // empty' "$CONFIG_FILE")
 AZURE_PROJECT=$(jq -r '.azureDevOps.project // empty' "$CONFIG_FILE")
 
 if [ -z "$AZURE_ORG" ] || [ -z "$AZURE_PROJECT" ]; then
-    echo "Error: Azure DevOps organization and project must be configured in $CONFIG_FILE" >&2
+    echo "" >&2
+    echo "❌ Azure DevOps configuration incomplete!" >&2
+    echo "" >&2
+    echo "The file $CONFIG_FILE exists but is missing required fields." >&2
+    echo "" >&2
+    echo "Please edit $CONFIG_FILE and add:" >&2
+    echo '  "azureDevOps": {' >&2
+    echo '    "organization": "your-org",  ← Fill this in' >&2
+    echo '    "project": "your-project"     ← Fill this in' >&2
+    echo '  }' >&2
+    echo "" >&2
+    echo "Example: If your Azure DevOps URL is https://dev.azure.com/contoso/MyProject" >&2
+    echo "  organization: contoso" >&2
+    echo "  project: MyProject" >&2
+    echo "" >&2
     exit 1
 fi
 

@@ -24,20 +24,84 @@ Given the work item ID, do this:
    - If empty or invalid, ERROR: "Please provide a valid Azure DevOps work item ID"
 
 2. **Ensure configuration exists**:
-   - Check if `.specify/config.json` exists
-   - If not, create it by asking the user for:
-     - Azure DevOps organization name
-     - Azure DevOps project name
 
-   Example config structure:
-   ```json
-   {
-     "azureDevOps": {
-       "organization": "your-org",
-       "project": "your-project"
-     }
-   }
-   ```
+   a. **Check if `.specify/config.json` exists**:
+      ```bash
+      ls -la .specify/config.json
+      ```
+
+   b. **If file does NOT exist**:
+      - Inform the user they need to create the config file first
+      - Display these step-by-step setup instructions:
+
+      ```markdown
+      ## Azure DevOps Setup Required
+
+      The `.specify/config.json` file is missing. Please complete these steps first:
+
+      ### Step 1: Create Configuration File
+
+      ```bash
+      # Copy the example config
+      cp .specify-config.example.json .specify/config.json
+      ```
+
+      ### Step 2: Edit Configuration
+
+      Open `.specify/config.json` and fill in your Azure DevOps details:
+
+      ```json
+      {
+        "azureDevOps": {
+          "enabled": true,
+          "organization": "your-organization",
+          "project": "your-project"
+        }
+      }
+      ```
+
+      **How to find your organization and project:**
+      - Look at your Azure DevOps URL: `https://dev.azure.com/{organization}/{project}`
+      - Example: If your URL is `https://dev.azure.com/contoso/MyProject`
+        - organization: `contoso`
+        - project: `MyProject`
+
+      ### Step 3: Set Authentication
+
+      Choose one authentication method:
+
+      **Option A: Personal Access Token (Recommended)**
+      ```bash
+      export AZURE_DEVOPS_PAT="your-token-here"
+      ```
+
+      To create a PAT:
+      1. Go to Azure DevOps → User Settings → Personal Access Tokens
+      2. Click "New Token"
+      3. Name: "Spec Kit Integration"
+      4. Scope: **Work Items (Read)** ✓
+      5. Copy the token
+
+      **Option B: Azure CLI**
+      ```bash
+      az login
+      ```
+
+      ### Step 4: Try Again
+
+      Once setup is complete, run:
+      ```
+      /speckit.startIssue {WORK_ITEM_ID}
+      ```
+      ```
+
+      - **STOP HERE** - Do not proceed with the work item fetch
+      - Exit and wait for the user to complete the setup
+
+   c. **If file EXISTS**:
+      - Read the config file to verify it has the required fields
+      - Check that `azureDevOps.organization` and `azureDevOps.project` are not empty
+      - If fields are empty or missing, show the same setup instructions as above
 
 3. **Check authentication**:
    - Inform the user about authentication options:
