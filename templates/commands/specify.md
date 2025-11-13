@@ -36,27 +36,37 @@ Before proceeding with the user input, check if there is Azure DevOps work item 
    - If HTML content exists in any field, convert it to markdown or plain text for better readability
 
 2. **Determine feature description source**:
-   - **If work item data exists AND user provided no arguments**:
+   - **If user provided arguments**:
+     - **IGNORE Azure DevOps work item data completely**
+     - Use the user's input as the feature description (standard behavior)
+     - Set `AZURE_ISSUE_ID` to empty
+     - This allows using the tool without Azure DevOps integration
+   - **If user provided NO arguments AND work item data exists**:
      - Use the work item **prompt** field as the main feature description
      - If **context** is not empty, include it as additional background
      - If **additionalContext** is not empty, include it (acceptance criteria or system info)
      - Set `AZURE_ISSUE_ID` to the work item ID (this will be used for branch naming)
-   - **If work item data exists AND user provided arguments**:
-     - Use the work item **prompt** as the base
-     - Add the **context** and **additionalContext** if available
-     - User's input should augment/clarify the work item, not replace it
-     - Set `AZURE_ISSUE_ID` to the work item ID
-   - **If no work item data exists**:
-     - Use the user's input as the feature description (standard behavior)
+   - **If user provided NO arguments AND no work item data exists**:
+     - Show error: "Please provide a feature description or run /speckit.startIssue first"
      - Set `AZURE_ISSUE_ID` to empty
 
 3. **Clean up work item data**:
-   - After reading the work item data, optionally archive it (rename to `last-issue.json`) to avoid accidental reuse
-   - This ensures each `/speckit.startIssue` maps to one specification
+   - **IMPORTANT**: After completing the specification, DELETE `.specify/temp/current-issue.json`
+   - This prevents accidental reuse of the same work item
+   - Each `/speckit.startIssue` must be followed by one `/speckit.specify`
+   - Note: Only delete if the work item data was actually used (i.e., user provided no arguments)
 
 ## Outline
 
-The text the user typed after `/speckit.specify` in the triggering message **is** the feature description, UNLESS Azure DevOps work item data is available (see above). Assume you always have it available in this conversation even if `{ARGS}` appears literally below. Do not ask the user to repeat it unless they provided an empty command AND no work item data exists.
+**IMPORTANT - Arguments vs Azure DevOps:**
+- **If user provides ANY text after `/speckit.specify`**: Use ONLY that text, completely ignore Azure DevOps work item data
+- **If user provides NO text (empty command)**: Use Azure DevOps work item data from `/speckit.startIssue`
+
+This allows flexible usage:
+- `/speckit.specify Add user authentication` → Uses "Add user authentication", ignores Azure DevOps
+- `/speckit.specify` (empty) → Uses Azure DevOps work item #957 data
+
+The text the user typed after `/speckit.specify` in the triggering message **is** the feature description IF they provided any. Assume you always have it available in this conversation even if `{ARGS}` appears literally below. Do not ask the user to repeat it unless they provided an empty command AND no work item data exists.
 
 Given that feature description, do this:
 
