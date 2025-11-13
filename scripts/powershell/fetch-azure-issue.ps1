@@ -148,23 +148,66 @@ try {
     exit 1
 }
 
-# Extract relevant fields
+# Extract common fields
 $workItemType = $response.fields.'System.WorkItemType'
 $title = $response.fields.'System.Title'
-$description = $response.fields.'System.Description' ?? ""
 $state = $response.fields.'System.State'
 $assignedTo = $response.fields.'System.AssignedTo'.displayName ?? "Unassigned"
-$acceptanceCriteria = $response.fields.'Microsoft.VSTS.Common.AcceptanceCriteria' ?? ""
 
-# Create issue data object
+# Get AI Prompt custom field
+$aiPrompt = $response.fields.'Custom.AIPrompt' ?? ""
+
+# Extract fields based on work item type
+if ($workItemType -eq "Bug") {
+    # Bug: Repro Steps, System Info
+    $description = $response.fields.'Microsoft.VSTS.TCM.ReproSteps' ?? ""
+    $systemInfo = $response.fields.'Microsoft.VSTS.TCM.SystemInfo' ?? ""
+    $acceptanceCriteria = ""
+
+    # Determine prompt and context for Bug
+    if ($aiPrompt -and $aiPrompt -ne "") {
+        $prompt = $aiPrompt
+        $context = $description
+        $additionalContext = $systemInfo
+    } else {
+        $prompt = $description
+        $context = ""
+        $additionalContext = $systemInfo
+    }
+} else {
+    # User Story, Task, Feature, etc: Description, Acceptance Criteria
+    $description = $response.fields.'System.Description' ?? ""
+    $acceptanceCriteria = $response.fields.'Microsoft.VSTS.Common.AcceptanceCriteria' ?? ""
+    $systemInfo = ""
+
+    # Determine prompt and context for User Story/Feature/Task
+    if ($aiPrompt -and $aiPrompt -ne "") {
+        $prompt = $aiPrompt
+        $context = $description
+        $additionalContext = $acceptanceCriteria
+    } else {
+        $prompt = $description
+        $context = ""
+        $additionalContext = $acceptanceCriteria
+    }
+}
+
+# Create issue data object with new structure
 $issueData = @{
     id = $WorkItemId
     type = $workItemType
     title = $title
-    description = $description
     state = $state
     assignedTo = $assignedTo
-    acceptanceCriteria = $acceptanceCriteria
+    prompt = $prompt
+    context = $context
+    additionalContext = $additionalContext
+    rawFields = @{
+        description = $description
+        acceptanceCriteria = $acceptanceCriteria
+        systemInfo = $systemInfo
+        aiPrompt = $aiPrompt
+    }
     fetchedAt = (Get-Date).ToUniversalTime().ToString("o")
 } | ConvertTo-Json -Depth 10
 
@@ -216,6 +259,26 @@ if ($Json) {
     Write-Host "Type:  $workItemType"
     Write-Host "Title: $title"
     Write-Host "State: $state"
+    Write-Host ""
+
+    # Show what will be used as prompt
+    if ($aiPrompt -and $aiPrompt -ne "") {
+        Write-Host "Prompt source: AI Prompt (custom field)"
+        if ($workItemType -eq "Bug") {
+            Write-Host "Context:       Repro Steps + System Info"
+        } else {
+            Write-Host "Context:       Description + Acceptance Criteria"
+        }
+    } else {
+        if ($workItemType -eq "Bug") {
+            Write-Host "Prompt source: Repro Steps"
+            Write-Host "Context:       System Info"
+        } else {
+            Write-Host "Prompt source: Description"
+            Write-Host "Context:       Acceptance Criteria"
+        }
+    }
+
     Write-Host ""
     Write-Host "Saved to: $IssueFile"
     Write-Host ""

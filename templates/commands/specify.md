@@ -23,17 +23,27 @@ Before proceeding with the user input, check if there is Azure DevOps work item 
      - Work item ID
      - Work item type (User Story, Task, Bug, etc.)
      - Title
-     - Description (may contain HTML formatting)
-     - Acceptance Criteria (may contain HTML formatting)
-   - If HTML content exists, convert it to markdown or plain text for better readability
+     - **prompt**: The main prompt to use for specification (already determined by type)
+     - **context**: Additional context (Description for User Story, Repro Steps for Bug)
+     - **additionalContext**: Extra context (Acceptance Criteria for User Story, System Info for Bug)
+   - The JSON structure contains these pre-processed fields based on work item type:
+     - For **User Story/Feature/Task**:
+       - If AI Prompt exists: prompt=AI Prompt, context=Description, additionalContext=Acceptance Criteria
+       - If no AI Prompt: prompt=Description, context="", additionalContext=Acceptance Criteria
+     - For **Bug**:
+       - If AI Prompt exists: prompt=AI Prompt, context=Repro Steps, additionalContext=System Info
+       - If no AI Prompt: prompt=Repro Steps, context="", additionalContext=System Info
+   - If HTML content exists in any field, convert it to markdown or plain text for better readability
 
 2. **Determine feature description source**:
    - **If work item data exists AND user provided no arguments**:
-     - Use the work item title + description as the feature description
-     - Include acceptance criteria in the specification
+     - Use the work item **prompt** field as the main feature description
+     - If **context** is not empty, include it as additional background
+     - If **additionalContext** is not empty, include it (acceptance criteria or system info)
      - Set `AZURE_ISSUE_ID` to the work item ID (this will be used for branch naming)
    - **If work item data exists AND user provided arguments**:
-     - Combine the work item data with user's additional context
+     - Use the work item **prompt** as the base
+     - Add the **context** and **additionalContext** if available
      - User's input should augment/clarify the work item, not replace it
      - Set `AZURE_ISSUE_ID` to the work item ID
    - **If no work item data exists**:

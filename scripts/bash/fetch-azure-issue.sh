@@ -186,31 +186,79 @@ if [ "$HTTP_CODE" != "200" ]; then
     exit 1
 fi
 
-# Extract relevant fields
+# Extract common fields
 WORK_ITEM_TYPE=$(echo "$HTTP_BODY" | jq -r '.fields["System.WorkItemType"] // "Unknown"')
 TITLE=$(echo "$HTTP_BODY" | jq -r '.fields["System.Title"] // ""')
-DESCRIPTION=$(echo "$HTTP_BODY" | jq -r '.fields["System.Description"] // ""')
 STATE=$(echo "$HTTP_BODY" | jq -r '.fields["System.State"] // "Unknown"')
 ASSIGNED_TO=$(echo "$HTTP_BODY" | jq -r '.fields["System.AssignedTo"].displayName // "Unassigned"')
-ACCEPTANCE_CRITERIA=$(echo "$HTTP_BODY" | jq -r '.fields["Microsoft.VSTS.Common.AcceptanceCriteria"] // ""')
 
-# Create issue data JSON
+# Get AI Prompt custom field
+AI_PROMPT=$(echo "$HTTP_BODY" | jq -r '.fields["Custom.AIPrompt"] // ""')
+
+# Extract fields based on work item type
+if [ "$WORK_ITEM_TYPE" = "Bug" ]; then
+    # Bug: Repro Steps, System Info
+    DESCRIPTION=$(echo "$HTTP_BODY" | jq -r '.fields["Microsoft.VSTS.TCM.ReproSteps"] // ""')
+    SYSTEM_INFO=$(echo "$HTTP_BODY" | jq -r '.fields["Microsoft.VSTS.TCM.SystemInfo"] // ""')
+    ACCEPTANCE_CRITERIA=""
+
+    # Determine prompt and context for Bug
+    if [ -n "$AI_PROMPT" ] && [ "$AI_PROMPT" != "null" ]; then
+        PROMPT="$AI_PROMPT"
+        CONTEXT="$DESCRIPTION"
+        ADDITIONAL_CONTEXT="$SYSTEM_INFO"
+    else
+        PROMPT="$DESCRIPTION"
+        CONTEXT=""
+        ADDITIONAL_CONTEXT="$SYSTEM_INFO"
+    fi
+else
+    # User Story, Task, Feature, etc: Description, Acceptance Criteria
+    DESCRIPTION=$(echo "$HTTP_BODY" | jq -r '.fields["System.Description"] // ""')
+    ACCEPTANCE_CRITERIA=$(echo "$HTTP_BODY" | jq -r '.fields["Microsoft.VSTS.Common.AcceptanceCriteria"] // ""')
+    SYSTEM_INFO=""
+
+    # Determine prompt and context for User Story/Feature/Task
+    if [ -n "$AI_PROMPT" ] && [ "$AI_PROMPT" != "null" ]; then
+        PROMPT="$AI_PROMPT"
+        CONTEXT="$DESCRIPTION"
+        ADDITIONAL_CONTEXT="$ACCEPTANCE_CRITERIA"
+    else
+        PROMPT="$DESCRIPTION"
+        CONTEXT=""
+        ADDITIONAL_CONTEXT="$ACCEPTANCE_CRITERIA"
+    fi
+fi
+
+# Create issue data JSON with new structure
 ISSUE_DATA=$(jq -n \
     --arg id "$WORK_ITEM_ID" \
     --arg type "$WORK_ITEM_TYPE" \
     --arg title "$TITLE" \
-    --arg description "$DESCRIPTION" \
     --arg state "$STATE" \
     --arg assignedTo "$ASSIGNED_TO" \
+    --arg prompt "$PROMPT" \
+    --arg context "$CONTEXT" \
+    --arg additionalContext "$ADDITIONAL_CONTEXT" \
+    --arg description "$DESCRIPTION" \
     --arg acceptanceCriteria "$ACCEPTANCE_CRITERIA" \
+    --arg systemInfo "$SYSTEM_INFO" \
+    --arg aiPrompt "$AI_PROMPT" \
     '{
         id: $id,
         type: $type,
         title: $title,
-        description: $description,
         state: $state,
         assignedTo: $assignedTo,
-        acceptanceCriteria: $acceptanceCriteria,
+        prompt: $prompt,
+        context: $context,
+        additionalContext: $additionalContext,
+        rawFields: {
+            description: $description,
+            acceptanceCriteria: $acceptanceCriteria,
+            systemInfo: $systemInfo,
+            aiPrompt: $aiPrompt
+        },
         fetchedAt: (now | todate)
     }')
 
@@ -269,6 +317,26 @@ else
     echo "Type:  $WORK_ITEM_TYPE"
     echo "Title: $TITLE"
     echo "State: $STATE"
+    echo ""
+
+    # Show what will be used as prompt
+    if [ -n "$AI_PROMPT" ] && [ "$AI_PROMPT" != "null" ]; then
+        echo "Prompt source: AI Prompt (custom field)"
+        if [ "$WORK_ITEM_TYPE" = "Bug" ]; then
+            echo "Context:       Repro Steps + System Info"
+        else
+            echo "Context:       Description + Acceptance Criteria"
+        fi
+    else
+        if [ "$WORK_ITEM_TYPE" = "Bug" ]; then
+            echo "Prompt source: Repro Steps"
+            echo "Context:       System Info"
+        else
+            echo "Prompt source: Description"
+            echo "Context:       Acceptance Criteria"
+        fi
+    fi
+
     echo ""
     echo "Saved to: $ISSUE_FILE"
     echo ""

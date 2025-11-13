@@ -86,3 +86,19 @@ echo "=== Response ==="
 echo "$HTTP_RESPONSE"
 echo ""
 echo "=== End Response ==="
+echo ""
+
+# Parse and show all custom fields
+if command -v jq &> /dev/null; then
+    HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
+    HTTP_CODE=$(echo "$HTTP_RESPONSE" | tail -n 1)
+
+    if [ "$HTTP_CODE" = "200" ]; then
+        echo "=== All Available Fields ==="
+        echo "$HTTP_BODY" | jq -r '.fields | keys[]' | sort
+        echo ""
+        echo "=== Custom Fields (containing 'Custom' or 'AI') ==="
+        echo "$HTTP_BODY" | jq -r '.fields | keys[] | select(test("Custom|AI"; "i"))'
+        echo ""
+    fi
+fi
