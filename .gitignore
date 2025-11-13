@@ -44,3 +44,4 @@ env/
 *.zip
 sdd-*/
 .specify/temp/
+.specify/config.json
