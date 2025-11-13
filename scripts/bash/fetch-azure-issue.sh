@@ -217,6 +217,48 @@ ISSUE_DATA=$(jq -n \
 # Save to temp file
 echo "$ISSUE_DATA" > "$ISSUE_FILE"
 
+# Update work item state to "Active" if not already
+if [ "$STATE" != "Active" ]; then
+    if [ "$JSON_MODE" = false ]; then
+        echo "[specify] Updating work item state to Active..." >&2
+    fi
+
+    # Construct PATCH request body
+    PATCH_BODY='[
+        {
+            "op": "add",
+            "path": "/fields/System.State",
+            "value": "Active"
+        }
+    ]'
+
+    # Make PATCH request
+    PATCH_RESPONSE=$(curl -s -w "\n%{http_code}" \
+        -X PATCH \
+        -H "$AUTH_HEADER" \
+        -H "Content-Type: application/json-patch+json" \
+        -d "$PATCH_BODY" \
+        "$API_URL")
+
+    PATCH_BODY_RESPONSE=$(echo "$PATCH_RESPONSE" | sed '$d')
+    PATCH_CODE=$(echo "$PATCH_RESPONSE" | tail -n 1)
+
+    if [ "$PATCH_CODE" = "200" ]; then
+        if [ "$JSON_MODE" = false ]; then
+            echo "[specify] ✓ State updated: $STATE → Active" >&2
+        fi
+        STATE="Active"
+
+        # Update the saved JSON with new state
+        ISSUE_DATA=$(echo "$ISSUE_DATA" | jq '.state = "Active"')
+        echo "$ISSUE_DATA" > "$ISSUE_FILE"
+    else
+        if [ "$JSON_MODE" = false ]; then
+            echo "[specify] ⚠ Warning: Could not update state (HTTP $PATCH_CODE)" >&2
+        fi
+    fi
+fi
+
 if $JSON_MODE; then
     echo "$ISSUE_DATA"
 else

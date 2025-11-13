@@ -171,6 +171,41 @@ $issueData = @{
 # Save to temp file
 $issueData | Out-File -FilePath $IssueFile -Encoding UTF8 -NoNewline
 
+# Update work item state to "Active" if not already
+if ($state -ne "Active") {
+    if (-not $Json) {
+        Write-Host "[specify] Updating work item state to Active..." -ForegroundColor Gray
+    }
+
+    # Construct PATCH request body
+    $patchBody = @(
+        @{
+            op = "add"
+            path = "/fields/System.State"
+            value = "Active"
+        }
+    ) | ConvertTo-Json -Depth 10
+
+    try {
+        $patchResponse = Invoke-RestMethod -Uri $apiUrl -Headers $authHeader -Method Patch -Body $patchBody -ContentType "application/json-patch+json"
+
+        if (-not $Json) {
+            Write-Host "[specify] ✓ State updated: $state → Active" -ForegroundColor Gray
+        }
+        $state = "Active"
+
+        # Update the saved JSON with new state
+        $issueDataObj = $issueData | ConvertFrom-Json
+        $issueDataObj.state = "Active"
+        $issueData = $issueDataObj | ConvertTo-Json -Depth 10
+        $issueData | Out-File -FilePath $IssueFile -Encoding UTF8 -NoNewline
+    } catch {
+        if (-not $Json) {
+            Write-Host "[specify] ⚠ Warning: Could not update state - $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+    }
+}
+
 if ($Json) {
     Write-Output $issueData
 } else {
