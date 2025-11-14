@@ -130,7 +130,15 @@ build_variant() {
     esac
   fi
   
-  [[ -d templates ]] && { mkdir -p "$SPEC_DIR/templates"; find templates -type f -not -path "templates/commands/*" -not -name "vscode-settings.json" -exec cp --parents {} "$SPEC_DIR"/ \; ; echo "Copied templates -> .specify/templates"; }
+  # Copy templates (excluding commands/ and vscode-settings.json) while preserving directory structure
+  if [[ -d templates ]]; then
+    mkdir -p "$SPEC_DIR/templates"
+    (cd templates && find . -type f -not -path "./commands/*" -not -name "vscode-settings.json" | while read -r file; do
+      mkdir -p "$SPEC_DIR/templates/$(dirname "$file")"
+      cp "$file" "$SPEC_DIR/templates/$file"
+    done)
+    echo "Copied templates -> .specify/templates"
+  fi
 
   # Copy config example to project root
   [[ -f .specify-config.example.json ]] && { cp .specify-config.example.json "$base_dir/"; echo "Copied .specify-config.example.json"; }
