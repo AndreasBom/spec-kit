@@ -130,10 +130,10 @@ build_variant() {
     esac
   fi
   
-  # Copy templates (excluding commands/ and vscode-settings.json) while preserving directory structure
+  # Copy templates (excluding commands/, .genreleases/, and vscode-settings.json) while preserving directory structure
   if [[ -d templates ]]; then
     mkdir -p "$SPEC_DIR/templates"
-    (cd templates && find . -type f -not -path "./commands/*" -not -name "vscode-settings.json" | while read -r file; do
+    (cd templates && find . -type f -not -path "./commands/*" -not -path "./.genreleases/*" -not -name "vscode-settings.json" | while read -r file; do
       mkdir -p "$SPEC_DIR/templates/$(dirname "$file")"
       cp "$file" "$SPEC_DIR/templates/$file"
     done)
